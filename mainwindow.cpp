@@ -39,3 +39,10 @@ void MainWindow::on_pushButton_4_clicked()
 {
     gv = 2;
 }
+
+void MainWindow::on_pushButton_5_clicked()
+{
+    int a = gv;
+    QString qstr = QString("%1").arg(a, sizeof(int) * 2, 16, QChar('0').toUpper());
+    QMessageBox::information(nullptr, qstr, qstr);
+}
