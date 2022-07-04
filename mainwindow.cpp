@@ -52,10 +52,9 @@ typedef union _LDR_DLL_NOTIFICATION_DATA {
     LDR_DLL_UNLOADED_NOTIFICATION_DATA Unloaded;
 } LDR_DLL_NOTIFICATION_DATA, *PLDR_DLL_NOTIFICATION_DATA;
 
-typedef VOID(CALLBACK *PLDR_DLL_NOTIFICATION_FUNCTION)(_In_ ULONG NotificationReason,
-                                                       _In_ PLDR_DLL_NOTIFICATION_DATA
-                                                           NotificationData,
-                                                       _In_opt_ PVOID Context);
+typedef VOID(NTAPI *PLDR_DLL_NOTIFICATION_FUNCTION)(_In_ ULONG NotificationReason,
+                                                    _In_ PLDR_DLL_NOTIFICATION_DATA NotificationData,
+                                                    _In_opt_ PVOID Context);
 
 typedef NTSTATUS(NTAPI *_LdrRegisterDllNotification)(_In_ ULONG Flags,
                                                      _In_ PLDR_DLL_NOTIFICATION_FUNCTION
@@ -75,7 +74,7 @@ PVOID Cookie = NULL;
 BOOL GetNtFunctions()
 {
     HMODULE hNtDll;
-    if (!(hNtDll = GetModuleHandle(TEXT("ntdll.dll")))) {
+    if (!(hNtDll = GetModuleHandleA("ntdll.dll"))) {
         return FALSE;
     }
     LdrRegisterDllNotification = (_LdrRegisterDllNotification)
@@ -88,31 +87,31 @@ BOOL GetNtFunctions()
     return TRUE;
 }
 
-void CALLBACK MyDllNotification(ULONG Reason,
-                                PLDR_DLL_NOTIFICATION_DATA NotificationData,
-                                PVOID Context)
+void NTAPI MyDllNotification(ULONG Reason,
+                             PLDR_DLL_NOTIFICATION_DATA NotificationData,
+                             PVOID Context)
 {
     //Check for the reason
     switch (Reason) {
         //LDR_DLL_NOTIFICATION_REASON_LOADED
     case LDR_DLL_NOTIFICATION_REASON_LOADED: {
-        wchar_t message[256] = {0};
-        swprintf(message,
-                 L"DLL was loaded event for %wZ\n",
-                 (*NotificationData->Loaded.FullDllName));
+        wchar_t message[500] = {0};
+        swprintf(message, L"DLL was loaded event for %wZ\n", (NotificationData->Loaded.FullDllName));
         std::wstring wstrmsg(message);
         std::string strmsg(wstrmsg.begin(), wstrmsg.end());
         g_ui->textEdit_2->append(strmsg.c_str());
-    } break;
+        break;
+    }
         //LDR_DLL_NOTIFICATION_REASON_UNLOADED
     case LDR_DLL_NOTIFICATION_REASON_UNLOADED: {
-        wchar_t message[256] = {0};
+        wchar_t message[500] = {0};
         swprintf(message,
                  L"DLL was unloaded event for %wZ\n",
-                 (*NotificationData->Unloaded.FullDllName));
+                 (NotificationData->Unloaded.FullDllName));
         std::wstring wstrmsg(message);
         std::string strmsg(wstrmsg.begin(), wstrmsg.end());
         g_ui->textEdit_2->append(strmsg.c_str());
+        break;
     }
     default:
         return;
