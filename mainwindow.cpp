@@ -188,3 +188,29 @@ void MainWindow::on_pushButton_7_clicked()
         QMessageBox::information(nullptr, "veh failed", "veh failed");
     }
 }
+
+void MainWindow::on_pushButton_8_clicked()
+{
+    MessageBoxA(0, "123", "456", 0);
+}
+
+void MainWindow::on_pushButton_9_clicked()
+{
+    MessageBoxW(0, L"AAA", L"BBB", 0);
+}
+
+void MainWindow::on_pushButton_10_clicked()
+{
+    MessageBoxA(0,
+                QString::fromUtf8("很好").toStdString().c_str(),
+                QString::fromUtf8("很好").toStdString().c_str(),
+                0);
+}
+
+void MainWindow::on_pushButton_11_clicked()
+{
+    MessageBoxW(0,
+                QString::fromUtf8("你好").toStdWString().c_str(),
+                QString::fromUtf8("你好").toStdWString().c_str(),
+                0);
+}
