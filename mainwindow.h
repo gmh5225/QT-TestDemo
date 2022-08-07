@@ -14,8 +14,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+    void my_pushButton_qt5_clicked();
 private slots:
+
     void on_pushButton_clicked();
 
     void on_pushButton_2_clicked();

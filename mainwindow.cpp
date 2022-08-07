@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include <Windows.h>
 #include <QMessageBox>
+#include <QTextCodec>
 
 typedef __success(return >= 0) LONG NTSTATUS;
 
@@ -118,6 +119,11 @@ void NTAPI MyDllNotification(ULONG Reason,
     }
 }
 
+void MainWindow::my_pushButton_qt5_clicked()
+{
+    QMessageBox::information(nullptr, "qt5", "qt5");
+}
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     g_ui = ui;
@@ -129,6 +135,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
 
     GetNtFunctions();
     LdrRegisterDllNotification(0, &MyDllNotification, NULL, &Cookie);
+
+    connect(ui->pushButton_qt5, &QPushButton::clicked, this, &MainWindow::my_pushButton_qt5_clicked);
 }
 
 MainWindow::~MainWindow()
@@ -201,16 +209,31 @@ void MainWindow::on_pushButton_9_clicked()
 
 void MainWindow::on_pushButton_10_clicked()
 {
-    MessageBoxA(0,
-                QString::fromUtf8("很好").toStdString().c_str(),
-                QString::fromUtf8("很好").toStdString().c_str(),
-                0);
+    QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+    QString str = codec->toUnicode("很好"); //2
+
+    wchar_t wstr[300] = {0};
+    str.toWCharArray(wstr);
+    std::wstring wwstr(wstr);
+    QString qqqstr = QString::fromStdWString(wwstr);
+
+    MessageBoxA(0, qqqstr.toStdString().c_str(), qqqstr.toStdString().c_str(), 0);
+
+    //    MessageBoxA(0,
+    //                QString::fromUtf8("很好").toStdString().c_str(),
+    //                QString::fromUtf8("很好").toStdString().c_str(),
+    //                0);
 }
 
 void MainWindow::on_pushButton_11_clicked()
 {
-    MessageBoxW(0,
-                QString::fromUtf8("你好").toStdWString().c_str(),
-                QString::fromUtf8("你好").toStdWString().c_str(),
-                0);
+    QTextCodec *codec = QTextCodec::codecForName("UTF-8");
+    QString str = codec->toUnicode("你好"); //2
+
+    MessageBoxW(0, str.toStdWString().c_str(), str.toStdWString().c_str(), 0);
+
+    //    MessageBoxW(0,
+    //                QString::fromUtf8("你好").toStdWString().c_str(),
+    //                QString::fromUtf8("你好").toStdWString().c_str(),
+    //                0);
 }
