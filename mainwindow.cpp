@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <Windows.h>
+#include <thread>
 #include <QMessageBox>
 #include <QTextCodec>
 
@@ -236,4 +237,49 @@ void MainWindow::on_pushButton_11_clicked()
     //                QString::fromUtf8("你好").toStdWString().c_str(),
     //                QString::fromUtf8("你好").toStdWString().c_str(),
     //                0);
+}
+
+BOOL HardwareBreakpoints()
+{
+    BOOL bResult = FALSE;
+
+    // This structure is key to the function and is the
+    // medium for detection and removal
+    PCONTEXT ctx = PCONTEXT(VirtualAlloc(NULL, sizeof(CONTEXT), MEM_COMMIT, PAGE_READWRITE));
+
+    if (ctx) {
+        SecureZeroMemory(ctx, sizeof(CONTEXT));
+
+        // The CONTEXT structure is an in/out parameter therefore we have
+        // to set the flags so Get/SetThreadContext knows what to set or get.
+        ctx->ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+        // Get the registers
+        if (GetThreadContext(GetCurrentThread(), ctx)) {
+            // Now we can check for hardware breakpoints, its not
+            // necessary to check Dr6 and Dr7, however feel free to
+            if (ctx->Dr0 != 0 || ctx->Dr1 != 0 || ctx->Dr2 != 0 || ctx->Dr3 != 0)
+                bResult = TRUE;
+        }
+
+        VirtualFree(ctx, 0, MEM_RELEASE);
+    }
+
+    return bResult;
+}
+
+void MainWindow::on_pushButton_12_clicked()
+{
+    //hwbp_check_1
+    std::thread t1([&]() {
+        while (1) {
+            auto ret = HardwareBreakpoints();
+            if (ret) {
+                g_ui->textEdit_2->append("detect HWBP by GetThreadContext");
+            }
+            Sleep(1000);
+        }
+    });
+
+    t1.detach();
 }
