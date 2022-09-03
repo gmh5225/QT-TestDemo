@@ -268,6 +268,24 @@ BOOL HardwareBreakpoints()
     return bResult;
 }
 
+LONG WINAPI CustomUnhandledExceptionFilter(_EXCEPTION_POINTERS *ExceptionInfo)
+{
+    if (ExceptionInfo->ContextRecord->Dr0 != 0 || ExceptionInfo->ContextRecord->Dr1 != 0
+        || ExceptionInfo->ContextRecord->Dr2 != 0 || ExceptionInfo->ContextRecord->Dr3 != 0) {
+        g_ui->textEdit_2->append("detect HWBP by SEH");
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
+void HardwareBreakpointsBSEH()
+{
+    __try {
+        __debugbreak();
+    } __except (CustomUnhandledExceptionFilter(GetExceptionInformation())) {
+    }
+}
+
 void MainWindow::on_pushButton_12_clicked()
 {
     //hwbp_check_1
@@ -277,9 +295,23 @@ void MainWindow::on_pushButton_12_clicked()
             if (ret) {
                 g_ui->textEdit_2->append("detect HWBP by GetThreadContext");
             }
+
+            HardwareBreakpointsBSEH();
+
             Sleep(1000);
         }
     });
 
     t1.detach();
+}
+
+void MainWindow::on_pushButton_13_clicked()
+{
+    auto p = (SIZE_T) VirtualAlloc(NULL, 0x1000, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    if (p) {
+        QString qstrgvaddr = QString("%1").arg(p, sizeof(size_t) * 2, 16, QChar('0').toUpper());
+        g_ui->textEdit_3->append(qstrgvaddr);
+    } else {
+        MessageBoxA(0, "0", "0", 0);
+    }
 }
