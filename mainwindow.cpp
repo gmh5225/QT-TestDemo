@@ -239,6 +239,10 @@ void MainWindow::on_pushButton_11_clicked()
     //                0);
 }
 
+NTSTATUS
+NTAPI
+NtGetContextThread(_In_ HANDLE ThreadHandle, _Inout_ PCONTEXT ThreadContext);
+
 BOOL HardwareBreakpoints()
 {
     BOOL bResult = FALSE;
@@ -258,8 +262,33 @@ BOOL HardwareBreakpoints()
         if (GetThreadContext(GetCurrentThread(), ctx)) {
             // Now we can check for hardware breakpoints, its not
             // necessary to check Dr6 and Dr7, however feel free to
-            if (ctx->Dr0 != 0 || ctx->Dr1 != 0 || ctx->Dr2 != 0 || ctx->Dr3 != 0)
+            if (ctx->Dr0 != 0 || ctx->Dr1 != 0 || ctx->Dr2 != 0 || ctx->Dr3 != 0) {
                 bResult = TRUE;
+                g_ui->textEdit_2->append("detect HWBP by GetThreadContext");
+            }
+        }
+
+        // NtGetContextThread
+        {
+            auto ntdll = GetModuleHandleA("ntdll.dll");
+            auto pFuncTemp = (decltype(&NtGetContextThread)) GetProcAddress(ntdll,
+                                                                            "NtGetContextThread");
+
+            SecureZeroMemory(ctx, sizeof(CONTEXT));
+
+            // The CONTEXT structure is an in/out parameter therefore we have
+            // to set the flags so Get/SetThreadContext knows what to set or get.
+            ctx->ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+            // Get the registers
+            if (pFuncTemp(GetCurrentThread(), ctx) >= 0) {
+                // Now we can check for hardware breakpoints, its not
+                // necessary to check Dr6 and Dr7, however feel free to
+                if (ctx->Dr0 != 0 || ctx->Dr1 != 0 || ctx->Dr2 != 0 || ctx->Dr3 != 0) {
+                    bResult = TRUE;
+                    g_ui->textEdit_2->append("detect HWBP by NtGetContextThread");
+                }
+            }
         }
 
         VirtualFree(ctx, 0, MEM_RELEASE);
@@ -291,12 +320,9 @@ void MainWindow::on_pushButton_12_clicked()
     //hwbp_check_1
     std::thread t1([&]() {
         while (1) {
-            auto ret = HardwareBreakpoints();
-            if (ret) {
-                g_ui->textEdit_2->append("detect HWBP by GetThreadContext");
-            }
+            HardwareBreakpoints();
 
-            HardwareBreakpointsBSEH();
+            // HardwareBreakpointsBSEH();
 
             Sleep(1000);
         }
@@ -313,5 +339,24 @@ void MainWindow::on_pushButton_13_clicked()
         g_ui->textEdit_3->append(qstrgvaddr);
     } else {
         MessageBoxA(0, "0", "0", 0);
+    }
+}
+
+void MainWindow::on_pushButton_14_clicked()
+{
+    CONTEXT ctx;
+    memset(&ctx, 0, sizeof(CONTEXT));
+    ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+    ctx.Dr0 = 0;
+    ctx.Dr1 = 0;
+    ctx.Dr2 = 0;
+    ctx.Dr3 = 0;
+    ctx.Dr7 &= (0xffffffffffffffff ^ (0x1 | 0x4 | 0x10 | 0x40));
+
+    if (SetThreadContext(GetCurrentThread(), &ctx)) {
+        g_ui->textEdit_3->append("SetThreadContext ok");
+    } else {
+        g_ui->textEdit_3->append("SetThreadContext failed");
     }
 }
